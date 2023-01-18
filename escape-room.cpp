@@ -23,15 +23,12 @@ auto input(std::string *s, bool *run) -> void {
     *run = false;
 }
 
-auto output(int64_t milliseconds, bool *run) -> void {
+auto output(int64_t milliseconds, std::chrono::time_point<std::chrono::steady_clock> start, bool *run) -> void {
     int64_t difference_ms;
     int64_t delta_ms;
     int64_t delta_h;
     int64_t delta_min;
     int64_t delta_s;
-    const auto start = std::chrono::steady_clock::now();
-
-    clear();
 
     do {
         const auto difference = std::chrono::steady_clock::now() - start;
@@ -71,24 +68,30 @@ auto main() -> int {
     auto minutes = prompt<float>("Enter a duration (min): ");
 
     int64_t milliseconds = minutes * MINUTE;
-    
-    bool run = true;
-    std::string out = EMPTY;
-    std::thread o (output, milliseconds, &run);
-    std::thread i (input, &out, &run);
 
-    o.join();
-    i.detach();
+    clear();
+
+    const auto start = std::chrono::steady_clock::now();
     
-    if (out == EMPTY) {
-        std::cout << "Time is up!" << std::endl;
-        return EXIT_FAILURE;
+    while (true) {
+        bool run = true;
+        std::string out = EMPTY;
+        std::thread o (output, milliseconds, start, &run);
+        std::thread i (input, &out, &run);
+
+        o.join();
+        i.detach();
+        
+        if (out == EMPTY) {
+            std::cout << "Time is up!" << std::endl;
+            return EXIT_FAILURE;
+        }
+        std::cout << "\r         \r";
+        if (out != password) {
+            std::cout << "Incorrect!" << std::endl;
+            continue;
+        }
+        std::cout << "Correct!" << std::endl;
+        return EXIT_SUCCESS;
     }
-    std::cout << "\r         \r";
-    if (out != password) {
-        std::cout << "Incorrect!" << std::endl;
-        return EXIT_FAILURE;
-    }
-    std::cout << "Correct!" << std::endl;
-    return EXIT_SUCCESS;
 }
